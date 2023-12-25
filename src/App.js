@@ -14,15 +14,37 @@ const App = () => {
   const [menuVisible, setMenuVisible] = useState(false);
   const [modificationValue, setModificationValue] = useState(false);
   const [selectedColor, setSelectedColor] = useState('#ffffff'); // Initial color
+  const [movementOption, setMovementOption] = useState(); // Initial value set to undefined
 
-  const handleColorChange = (color, colorString) => {
-    setSelectedColor(colorString);
-    // You can perform additional actions based on the selected color if needed
+  const handleMovementOptionChange = (e) => {
+    const newValue = e.target.value;
+    setMovementOption(newValue === movementOption ? undefined : newValue);
+    if (newValue !== undefined) {
+      setModificationValue(false);
+    }
   };
 
   const handleModificationChange = () => {
     setModificationValue(!modificationValue);
+    if (!modificationValue) {
+      setMovementOption(undefined);
+    }
   };
+
+  const handleColorChange = (color, colorString) => {
+    setSelectedColor(colorString);
+  };
+
+  const updateSlider = (selectedObject) =>{
+    if(selectedObject.geometry.type === 'SphereGeometry'){
+      setRadius(selectedObject.geometry.parameters.radius);
+    }
+    else if(selectedObject.geometry.type === 'CubeGeometry'){
+      setHeight(selectedObject.geometry.parameters.height);
+      setWidth(selectedObject.geometry.parameters.width);
+      setDepth(selectedObject.geometry.parameters.depth);
+    }
+  }
 
   const toggleMenu = () => {
     setMenuVisible(!menuVisible);
@@ -31,10 +53,6 @@ const App = () => {
   const handleShapeChange = (value) => {
     console.log(`selected ${value}`);
     setSelectedShape(value);
-  };
-
-  const onChange1 = ({ target: { value } }) => {
-    console.log('radio1 checked', value);
   };
 
   return (
@@ -70,6 +88,8 @@ const App = () => {
               setDepth={setDepth}
               selectedColor={selectedColor}
               handleColorChange={handleColorChange}
+              movementOption={movementOption}
+              handleMovementOptionChange={handleMovementOptionChange}
               toggleMenu={toggleMenu}
             />
           </div>
@@ -86,6 +106,9 @@ const App = () => {
         width={width}
         depth={depth}
         selectedColor={selectedColor}
+        movementOption={movementOption}
+        updateSlider={updateSlider}
+        menuVisible={menuVisible}
         />
       </div>
     </div>
