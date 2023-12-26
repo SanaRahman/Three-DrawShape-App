@@ -8,8 +8,6 @@ let renderer = null;
 
 export function setUpScene() {
 
-    // const refContainer = useRef(null);
-
         scene = new THREE.Scene();
         camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
         renderer = new THREE.WebGLRenderer();
@@ -32,14 +30,15 @@ export function setUpScene() {
         const planeGeometry = new THREE.PlaneGeometry(100, 100)
         const planex = new THREE.Mesh(
             planeGeometry,
-            new THREE.MeshPhongMaterial({ color: 0xffffff, side: THREE.DoubleSide })
+            new THREE.MeshBasicMaterial({ color: 'black', side: THREE.DoubleSide })
         )
         planex.rotateX(Math.PI / 2)
         planex.position.y = -1.75
         planex.receiveShadow = true
         planex.userData.name= 'ground';
+        planex.renderOrder = 1;
         scene.add(planex)
 
-    return { scene, camera, renderer, controls, planex };
-};
+    return { scene, camera, renderer, controls };
+}
 

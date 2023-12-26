@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {Button} from 'antd';
 import { SettingOutlined } from '@ant-design/icons';
-import './App.css'
+import '../styles/App.css'
 import SettingBar from './SettingBar';
 import ThreeApp from './ThreeApp';
 
@@ -10,10 +10,10 @@ const App = () => {
   const [width, setWidth] = useState(1);
   const [height, setHeight] = useState(1);
   const [depth, setDepth] = useState(1);
-  const [selectedShape, setSelectedShape] = useState('sphere');
+  const [selectedShape, setSelectedShape] = useState(null);
   const [menuVisible, setMenuVisible] = useState(false);
   const [modificationValue, setModificationValue] = useState(false);
-  const [selectedColor, setSelectedColor] = useState('#ffffff'); // Initial color
+  const [selectedColor, setSelectedColor] = useState('#1677ff'); // Initial color
   const [movementOption, setMovementOption] = useState(); // Initial value set to undefined
 
   const handleMovementOptionChange = (e) => {
@@ -26,6 +26,7 @@ const App = () => {
 
   const handleModificationChange = () => {
     setModificationValue(!modificationValue);
+
     if (!modificationValue) {
       setMovementOption(undefined);
     }
@@ -36,13 +37,17 @@ const App = () => {
   };
 
   const updateSlider = (selectedObject) =>{
+    setSelectedShape('sphere');
     if(selectedObject.geometry.type === 'SphereGeometry'){
       setRadius(selectedObject.geometry.parameters.radius);
+
     }
-    else if(selectedObject.geometry.type === 'CubeGeometry'){
+    else if(selectedObject.geometry.type === 'BoxGeometry'){
+      setSelectedShape('cube');
       setHeight(selectedObject.geometry.parameters.height);
       setWidth(selectedObject.geometry.parameters.width);
       setDepth(selectedObject.geometry.parameters.depth);
+
     }
   }
 

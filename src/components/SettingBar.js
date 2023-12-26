@@ -3,7 +3,7 @@ import React from 'react';
 import { Button, Card, Space, Select, ColorPicker, Slider, Radio, Tooltip } from 'antd';
 import { CloseOutlined } from '@ant-design/icons';
 
-import './App.css';
+import '../styles/App.css';
 
 const SettingBar = ({
   handleShapeChange,
@@ -34,7 +34,6 @@ const SettingBar = ({
             <h3>Draw Shape</h3>
             <label>Select the shape you want to draw:</label>
             <Select
-                defaultValue="sphere"
                 style={{width: '100%'}}
                 onChange={handleShapeChange}
                 options={[
