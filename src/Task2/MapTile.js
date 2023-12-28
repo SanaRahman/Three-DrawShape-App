@@ -9,45 +9,58 @@ export default function MapTile() {
 
     useEffect(() => {
         setUpScene();
-        const geometry = new THREE.BoxGeometry(100, 100, 4);
+        const geometry = new THREE.BoxGeometry(150, 150, 0);
         const texture = new THREE.TextureLoader().load(
             'https://maps.googleapis.com/maps/api/staticmap?center=42.3359182924998,-71.60280179232359&size=500x500&scale=2&zoom=19&maptype=satellite&key=AIzaSyAo1viD-Ut0TzXTyihevwuf-9tv_J3dPa0'
         );
         const material = new THREE.MeshBasicMaterial({ map: texture });
         const cube = new THREE.Mesh(geometry, material);
 
-        cube.rotateX(-Math.PI / 4);
+        // cube.rotation= THREE.MathUtils.degToRad(90); 
         cube.receiveShadow = true;
         cube.userData.name = 'ground';
         scene.add(cube);
 
+      
 
-            const loader = new GLTFLoader();
+        var textureLoader = new THREE.TextureLoader();
+        var modelTexturesPath = 'modelTextures/';
+        
+        // var modelMaterial = new THREE.MeshBasicMaterial({ map: modelTexture });
+
+
+        // const textureMapping = {};
+
+        // Iterate over the range from 1 to 19
+        // for (let i = 0; i <= 19; i++) {
+        //     const textureNumber = i.toString().padStart(4, '0'); // Pad with zeros
+        //     const textureFileName = `odm_textured_model_geo_material${textureNumber}_map_Kd.png`;
+        //     console.log(textureFileName);
+        //     // textureMapping[`part${i}`] = textureFileName;
+        // }
+
+        let i=0;
+        const loader = new GLTFLoader();
         loader.load('models/model.glb', function (gltf) {
-            const mesh = gltf.scene;
-
-            // Calculate the center of the box geometry
-            // const boxCenter = new THREE.Vector3();
-            // geometry.computeBoundingBox();
-            // geometry.boundingBox.getCenter(boxCenter);
-
-            // Set the position of the loaded model to the center of the box
-            // mesh.position.copy(boxCenter);
-            mesh.traverse((node) => {
-                if (node.isMesh) {
-                    // Replace 'your_textures_path' with the path to your textures directory
-                    const texturePath = `modelTextures/${node.material.name}.png`;
-                    const textured = new THREE.TextureLoader().load(texturePath);
-                    node.material.map = textured;
-                    node.material.needsUpdate = true;
+            gltf.scene.traverse(function (child) {
+                if (child.isMesh) {
+                //    const textureFileName = textureMapping[child.name];
+                const textureNumber = i.toString().padStart(4, '0')
+                // const textureNumber = child.name.split('_')[3]; // Extracting the number part
+                const textureFileName = `odm_textured_model_geo_material${textureNumber}_map_Kd.png`;
+                console.log(textureFileName)
+                i++;
+                // Load and apply the texture
+                const modelTexture = textureLoader.load(modelTexturesPath + textureFileName);
+                const modelMaterial = new THREE.MeshBasicMaterial({ map: modelTexture });
+                child.material = modelMaterial;
                 }
-            });
+             })
 
-            mesh.rotateX(-Math.PI / 4);
-            mesh.position.set(-5,-120,0);
-            scene.add(mesh);
-        }, undefined, function (error) {
-            console.error(error);
+         gltf.scene.position.z = -90
+         gltf.scene.position.x = -10
+         gltf.scene.rotation.z= THREE.MathUtils.degToRad(-5);
+         scene.add(gltf.scene);
         });
 
         refContainer.current && refContainer.current.appendChild(renderer.domElement);

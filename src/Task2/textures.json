@@ -1,0 +1,24 @@
+{
+    "textures": [
+      { "part": "body", "texture": "odm_textured_model_geo_material0001_map_Kd.png" },
+      { "part": "body", "texture": "odm_textured_model_geo_material0002_map_Kd.png" },
+      { "part": "body", "texture": "odm_textured_model_geo_material0003_map_Kd.png" },
+      { "part": "body", "texture": "odm_textured_model_geo_material0004_map_Kd.png" },
+      { "part": "body", "texture": "odm_textured_model_geo_material0005_map_Kd.png" },
+      { "part": "body", "texture": "odm_textured_model_geo_material0006_map_Kd.png" },
+      { "part": "body", "texture": "odm_textured_model_geo_material0007_map_Kd.png" },
+      { "part": "body", "texture": "odm_textured_model_geo_material0008_map_Kd.png" },
+      { "part": "body", "texture": "odm_textured_model_geo_material0008_map_Kd.png" },
+      { "part": "body", "texture": "odm_textured_model_geo_material0010_map_Kd.png" },
+      { "part": "body", "texture": "odm_textured_model_geo_material0011_map_Kd.png" },
+      { "part": "body", "texture": "odm_textured_model_geo_material0012_map_Kd.png" },
+      { "part": "body", "texture": "odm_textured_model_geo_material0013_map_Kd.png" },
+      { "part": "body", "texture": "odm_textured_model_geo_material0014_map_Kd.png" },
+      { "part": "body", "texture": "odm_textured_model_geo_material0015_map_Kd.png" },
+      { "part": "body", "texture": "odm_textured_model_geo_material0016_map_Kd.png" },
+      { "part": "body", "texture": "odm_textured_model_geo_material0017_map_Kd.png" },
+      { "part": "body", "texture": "odm_textured_model_geo_material0018_map_Kd.png" },
+      { "part": "body", "texture": "odm_textured_model_geo_material0019_map_Kd.png" }
+    ]
+  }
+  

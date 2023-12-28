@@ -22,8 +22,8 @@ export function setUpScene() {
         const controls = new OrbitControls(camera, renderer.domElement);
 
 
-        const  AxesHelper = new THREE.AxesHelper(50);
-        // scene.add(AxesHelper);
+        const  AxesHelper = new THREE.AxesHelper(200);
+        scene.add(AxesHelper);
 
          const gridHelper= new THREE.GridHelper(100,10);
 
