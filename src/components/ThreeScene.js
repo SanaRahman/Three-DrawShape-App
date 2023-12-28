@@ -9,9 +9,9 @@ let renderer = null;
 export function setUpScene() {
 
         scene = new THREE.Scene();
-        camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
-        renderer = new THREE.WebGLRenderer();
-        let cameraZ = 40;
+        camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        renderer = new THREE.WebGLRenderer({antialias:true});
+        let cameraZ = 55;
 
         camera.position.set(0, 10, cameraZ);
         camera.lookAt(0, 0, 0)
@@ -23,21 +23,21 @@ export function setUpScene() {
 
 
         const  AxesHelper = new THREE.AxesHelper(50);
-        scene.add(AxesHelper);
+        // scene.add(AxesHelper);
 
          const gridHelper= new THREE.GridHelper(100,10);
 
-        const planeGeometry = new THREE.PlaneGeometry(100, 100)
-        const planex = new THREE.Mesh(
-            planeGeometry,
-            new THREE.MeshBasicMaterial({ color: 'black', side: THREE.DoubleSide })
-        )
-        planex.rotateX(Math.PI / 2)
-        planex.position.y = -1.75
-        planex.receiveShadow = true
-        planex.userData.name= 'ground';
-        planex.renderOrder = 1;
-        scene.add(planex)
+        // const planeGeometry = new THREE.PlaneGeometry(200, 180)
+        // const planex = new THREE.Mesh(
+        //     planeGeometry,
+        //     new THREE.MeshBasicMaterial({ color: 'black', side: THREE.DoubleSide })
+        // )
+        // planex.rotateX(Math.PI / 2)
+        // planex.position.y = -1.75
+        // planex.receiveShadow = true
+        // planex.userData.name= 'ground';
+        // planex.renderOrder = 1;
+        // scene.add(planex)
 
     return { scene, camera, renderer, controls };
 }

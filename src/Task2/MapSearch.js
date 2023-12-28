@@ -6,7 +6,6 @@ import { GoogleMap, useLoadScript, Marker } from '@react-google-maps/api';
 import { Outlet, Link } from "react-router-dom";
 
 const API_KEY = '494406aff1584b23ac5248a08c7bbbbf';
-// let download= null;
 let download= `https://maps.googleapis.com/maps/api/staticmap?center=42.3359182924998,-71.60280179232359&size=640x480&scale=2&zoom=14&key=AIzaSyAo1viD-Ut0TzXTyihevwuf-9tv_J3dPa0`;
 const libraries = ['places'];
 const MapSearch = () => {
@@ -162,12 +161,9 @@ const MapSearch = () => {
                             Download Map
                         </Button>
                     </a>
-
                 </div>
 
-
             </Card>
-            <img src={'assets/Capture.PNG'} alt ='img'/>
         </div>
 );
 };

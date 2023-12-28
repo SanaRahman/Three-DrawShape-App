@@ -5,8 +5,6 @@ import React, { useRef, useEffect, useMemo } from 'react';
 import {setSelectedObject, modifyShape, modifyColor} from './utils/ShapeModifier';
 import {ShapeDrawer} from "./utils/ShapeDrawer";
 
-
-
 let rayCaster = null;
 let selectedObject=  null;
 let isDragging = null;
