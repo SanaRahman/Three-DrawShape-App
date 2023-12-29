@@ -4,13 +4,13 @@ import { OrbitControls } from "three/addons/controls/OrbitControls";
 let scene = null;
 let camera = null;
 let renderer = null;
-
-
 export function setUpScene() {
 
         scene = new THREE.Scene();
         camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
         renderer = new THREE.WebGLRenderer({antialias:true});
+        renderer.outputColorSpace =THREE.SRGBColorSpace;
+        renderer.setClearColor(0x000000)
         let cameraZ = 55;
 
         camera.position.set(0, 10, cameraZ);
