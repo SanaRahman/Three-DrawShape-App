@@ -7,38 +7,35 @@ let renderer = null;
 export function setUpScene() {
 
         scene = new THREE.Scene();
-        camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
         renderer = new THREE.WebGLRenderer({antialias:true});
         renderer.outputColorSpace =THREE.SRGBColorSpace;
         renderer.setClearColor(0x000000)
-        let cameraZ = 55;
+        let cameraZ = 15;
 
-        camera.position.set(0, 10, cameraZ);
-        camera.lookAt(0, 0, 0)
+        camera.position.set(4, 5, 30);
+        const helper = new THREE.CameraHelper( camera );
+        scene.add( helper );
+
         renderer.setSize(window.innerWidth, window.innerHeight);
         scene.background = new THREE.Color(0x808080); // Gray background
 
+        const ambientLight = new THREE.AmbientLight(0xffffff, 3.0);
+        scene.add(ambientLight);
+
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 4.0);
+        directionalLight.position.set(1, 1, 9);
+        scene.add(directionalLight);
 
         const controls = new OrbitControls(camera, renderer.domElement);
-
+        controls.update();
 
         const  AxesHelper = new THREE.AxesHelper(200);
         scene.add(AxesHelper);
 
          const gridHelper= new THREE.GridHelper(100,10);
 
-        // const planeGeometry = new THREE.PlaneGeometry(200, 180)
-        // const planex = new THREE.Mesh(
-        //     planeGeometry,
-        //     new THREE.MeshBasicMaterial({ color: 'black', side: THREE.DoubleSide })
-        // )
-        // planex.rotateX(Math.PI / 2)
-        // planex.position.y = -1.75
-        // planex.receiveShadow = true
-        // planex.userData.name= 'ground';
-        // planex.renderOrder = 1;
-        // scene.add(planex)
 
-    return { scene, camera, renderer, controls };
+    return { scene, camera, renderer, controls,helper };
 }
 

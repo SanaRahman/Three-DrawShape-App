@@ -1,0 +1,28 @@
+// function onMouseClick(event) {
+//     // Calculate the mouse position relative to the canvas
+//     const clickPosition = new THREE.Vector2(
+//         (event.clientX / window.innerWidth) * 2 - 1,
+//         -(event.clientY / window.innerHeight) * 2 + 1
+//     );
+//     planeNormal.copy(camera.position).normalize();
+//     plane.setFromNormalAndCoplanarPoint(planeNormal, scene.position);
+//     rayCaster.setFromCamera(clickPosition, camera);
+//     rayCaster.ray.intersectPlane(plane, zoomTarget);
+//     var arrow = new THREE.ArrowHelper( rayCaster.ray.direction, rayCaster.ray.origin, 55, 0xff0000 );
+//     scene.add( arrow );
+// }
+// function onMouseWheel(event) {
+//     const delta = event.deltaY || (-event.detail * 40);
+//
+//     const zoomFactor = 1 + delta * 0.001;
+//
+//     // Calculate the new camera position based on the zoom factor and the zoom target
+//     const cameraPosition = camera.position.clone().sub(zoomTarget);
+//     cameraPosition.multiplyScalar(zoomFactor);
+//     camera.position.copy(zoomTarget.clone().add(cameraPosition));
+//
+//     // Update the orbit controls
+//     controls.target.copy(zoomTarget);
+//     controls.update();
+//
+// }
