@@ -13,7 +13,8 @@ export function setUpScene() {
         renderer.setClearColor(0x000000)
         let cameraZ = 15;
 
-        camera.position.set(4, 5, 30);
+        camera.up.set(0, 0, 1);
+        camera.position.set(-4, 0, 10);
         const helper = new THREE.CameraHelper( camera );
         scene.add( helper );
 

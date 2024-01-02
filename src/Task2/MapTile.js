@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { setUpScene } from '../components/ThreeScene';
 import React, { useRef, useEffect, useMemo } from 'react';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { makeProjection, projectLatLngToPoint } from './Projection';
 
 const planeNormal = new THREE.Vector3();
 const plane = new THREE.Plane();
@@ -12,6 +13,7 @@ let coordinatesStr="322650 3706594"
 let projection ="+proj=utm +zone=43 +datum=WGS84 +units=m +no_defs +type=crs"
 let lat ="33.484177969551"
 let lng= "73.0911479190149"
+let modelmaxheight;
 export default function MapTile() {
     const refContainer = useRef(null);
     const { scene, camera, renderer, controls,helper } = useMemo(() => setUpScene(refContainer.current), []);
@@ -59,7 +61,10 @@ export default function MapTile() {
         loader.load('models/model2/model.glb', function (gltf) {
             const root = gltf.scene;
             let bbox = new THREE.Box3().setFromObject(root);
+            modelmaxheight = bbox.max.z;
+
             let center = bbox.getCenter(new THREE.Vector3());
+
             root.position.sub(center);
             // root.rotation.x = -Math.PI/2;
 
@@ -80,7 +85,7 @@ export default function MapTile() {
     }
 
     function setControl() {
-
+        camera.position.set(-50, 0, 10);
         controls.listenToKeyEvents(window);
         controls.mouseButtons = {
             LEFT: null,
@@ -89,15 +94,17 @@ export default function MapTile() {
         };
 
         controls.enableDamping =true;
-        controls.enablePan =false;
+        controls.dampingFactor = 0.05;
+        controls.rotateSpeed = 0.7;
+        controls.enablePan =true;
         controls.minPolarAngle = 0;
-        controls.maxPolarAngle = THREE.MathUtils.degToRad(60);
+        controls.maxPolarAngle = 60 * (Math.PI/180);
         controls.minDistance = 2;
         controls.maxDistance = 500;
-
+        // let target = projectLatLngToPoint();
+        // controls.target.set(target.x, target.y,modelmaxheight)
         controls.target.set(0, 0, 0)
         controls.update();
-
     }
     return <div ref={refContainer}></div>;
 }
