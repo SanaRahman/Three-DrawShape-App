@@ -15,11 +15,9 @@ export function setUpScene() {
 
         camera.up.set(0, 0, 1);
         camera.position.set(-4, 0, 10);
-        const helper = new THREE.CameraHelper( camera );
-        scene.add( helper );
 
         renderer.setSize(window.innerWidth, window.innerHeight);
-        scene.background = new THREE.Color(0x808080); // Gray background
+        // scene.background = new THREE.Color(0x808080); // Gray background
 
         const ambientLight = new THREE.AmbientLight(0xffffff, 3.0);
         scene.add(ambientLight);
@@ -31,12 +29,17 @@ export function setUpScene() {
         const controls = new OrbitControls(camera, renderer.domElement);
         controls.update();
 
-        const  AxesHelper = new THREE.AxesHelper(200);
+
+        // Optional Helpers to understand 3D space
+        const  AxesHelper = new THREE.AxesHelper(50);
         scene.add(AxesHelper);
 
-         const gridHelper= new THREE.GridHelper(100,10);
+         // const gridHelper= new THREE.GridHelper(100,10);
+         // scene.add(gridHelper);
+        // const helper = new THREE.CameraHelper( camera );
+        // scene.add( helper );
 
 
-    return { scene, camera, renderer, controls,helper };
+    return { scene, camera, renderer, controls };
 }
 

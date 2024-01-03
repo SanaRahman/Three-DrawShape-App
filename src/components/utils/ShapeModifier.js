@@ -1,6 +1,5 @@
 import * as THREE from "three";
 
-
 export function setSelectedObject(rayCaster, clickPosition, scene,camera){
     rayCaster.setFromCamera( clickPosition, camera );
     const intersects = rayCaster.intersectObjects( scene.children );

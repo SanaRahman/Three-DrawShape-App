@@ -28,7 +28,6 @@ export default function ThreeApp ( {selectedShape,
 
     clickPosition = new THREE.Vector2();
     mousePosition =new THREE.Vector2();
-
     rayCaster = new THREE.Raycaster();
 
     useEffect(() => {
