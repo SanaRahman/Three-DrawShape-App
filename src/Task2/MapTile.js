@@ -23,8 +23,13 @@ let mouseClickPosition =null;
 let startPoint = null;
 let endPoint = null;
 
-let isDrawing =false;
-let  lineMaterial,lineGeometry,linePositions,positions,line;
+let isDrawing = null;
+let segmentCompleted = false;
+let lineGeometry,linePositions;
+
+let linePoints={};
+let linesArray= new Array();
+let Segments = {};
 
 export default function MapTile() {
     const refContainer = useRef(null);
@@ -58,48 +63,82 @@ export default function MapTile() {
     }, []);
 
     const handleMouseDown = (event) => {
-        isDrawing=true;
-        const intersects =getMousePosition(event);
-        if (intersects.length > 0) {
-            startPoint = intersects[0].point;
-            endPoint = intersects[0].point;
+        var isLeftClick = (event.which === 1 || event.button === 0);
+        if (isLeftClick) {
+            const intersects =getMousePosition(event);
+            if (intersects.length > 0) {
+                startPoint = intersects[0].point;
+                // endPoint = intersects[0].point;
 
-            drawEdge(startPoint);
-             lineMaterial = new THREE.LineBasicMaterial({ color: 'red' });
-             lineGeometry = new THREE.BufferGeometry();
-             linePositions = [];
-             positions = new Float32Array(6); // Two 3D coordinates (x, y, z) for start and end points
-             lineGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-             line = new THREE.Line(lineGeometry, lineMaterial);
-            scene.add(line);
+                if (isDrawing ){
+                 isDrawing= false;
+                 endPoint = intersects[0].point;
+                 setLineEnd("set");
+                }
+                else{
+                    isDrawing=true;
+                    console.log("startPoint:");
+                    console.log(startPoint);
+                    drawEdge(startPoint);
+                    setLineStart();
+                }
+            }
         }
-
+        else{
+            Segments["SegmentA"]= linesArray;
+            console.log(Segments);
+        }
     }
-
     const handleMouseMove =(event) => {
         if(isDrawing){
             const intersects =getMousePosition(event);
             if (intersects.length > 0) {
                 endPoint = intersects[0].point;
-                linePositions[0] = startPoint.x;
-                linePositions[1] = startPoint.y;
-                linePositions[2] = startPoint.z;
-                linePositions[3] = endPoint.x;
-                linePositions[4] = endPoint.y;
-                linePositions[5] = endPoint.z;
+                setLineEnd("update");
             }
-
-            // Update the line positions
-
-
-            lineGeometry.attributes.position.array.set(linePositions);
-            // Update the buffer attribute
-            lineGeometry.attributes.position.needsUpdate = true;
         }
     }
+    function setLineStart(){
+        const lineMaterial = new THREE.LineBasicMaterial({ color: 'red' });
+        lineGeometry = new THREE.BufferGeometry();
+        linePositions = [];
+        const positions = new Float32Array(6);
+        lineGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        const line = new THREE.Line(lineGeometry, lineMaterial);
+        linePositions[0] = startPoint.x;
+        linePositions[1] = startPoint.y;
+        linePositions[2] = startPoint.z;
+        lineGeometry.attributes.position.array.set(linePositions);
+        lineGeometry.attributes.position.needsUpdate = true;
+        scene.add(line);
+        linePoints = { start: startPoint, end: null };
+    }
+    function setLineEnd(str){
+        linePositions[3] = endPoint.x;
+        linePositions[4] = endPoint.y;
+        linePositions[5] = endPoint.z;
+        lineGeometry.attributes.position.array.set(linePositions);
+        lineGeometry.attributes.position.needsUpdate = true;
+        linePoints.end = endPoint;
+        if(str === "set"){
+            linesArray.push({ ...linePoints });
+            console.log(linesArray)
+            if(linesArray.length> 1){
+                // console.log(endPoint);
+                // console.log(linesArray[0].start)
+                console.log(endPoint.distanceTo(linesArray[0].start)<=1);
+                console.log("near");
+            }
+        }
 
+    }
+
+    document.addEventListener('keyup', function(event) {
+        if (event.key === 'Enter') {
+           isDrawing= false;
+        }
+    });
     const handleMouseUp = (event) =>{
-        isDrawing= false;
     }
     function drawEdge(position){
         const cubeGeometry = new THREE.BoxGeometry(0.17, 0.17, 0.1);
@@ -112,10 +151,7 @@ export default function MapTile() {
             linewidth: 4, // Adjust wireframe linewidth
         });
 
-        // Create cube mesh
         const cubeMesh = new THREE.Mesh(cubeGeometry, cubeMaterial);
-
-        // Create wireframe geometry and wireframe
         const wireframeGeometry = new THREE.EdgesGeometry(cubeGeometry);
         const wireframe = new THREE.LineSegments(
             wireframeGeometry,
@@ -130,10 +166,6 @@ export default function MapTile() {
 
     }
 
-    // function drawLine(){
-    //
-    //     scene.add(line);
-    // }
     function getMousePosition(event) {
         const mouse = new THREE.Vector2();
         mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
@@ -141,7 +173,6 @@ export default function MapTile() {
 
         rayCaster = new THREE.Raycaster();
         rayCaster.setFromCamera(mouse, camera);
-
         return  rayCaster.intersectObjects( modelObjects, false );
 
     }
@@ -204,13 +235,13 @@ export default function MapTile() {
             RIGHT: THREE.MOUSE.ROTATE,
         };
 
-        controls.enableDamping =true;
-        controls.dampingFactor = 0.25;
+        // controls.enableDamping =true;
+        // controls.dampingFactor = 0.25;
 
-        controls.rotateSpeed = 0.7;
+        // controls.rotateSpeed = 0.7;
         controls.enablePan =true;
         controls.minPolarAngle = 0;
-        let h=controls.minPolarAngle;
+        let h= controls.minPolarAngle;
         controls.maxPolarAngle = 60 * (Math.PI/180);
         // controls.minDistance = 2;
         // controls.maxDistance = 500;
@@ -218,12 +249,6 @@ export default function MapTile() {
         // controls.target.set(target.x, target.y,modelmaxheight)
         controls.target.set(0, 0, 0)
         controls.update();
-
-        let geo=new THREE.BoxGeometry(width,height,1);
-        let material = new THREE.MeshBasicMaterial({color:'red'})
-        let cube = new THREE.Mesh(geo,material);
-        cube.position.set(0,0,4)
-        scene.add(cube);
 
     }
 
