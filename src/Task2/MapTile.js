@@ -5,6 +5,9 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { makeProjection, projectLatLngToPoint } from './Projection';
 import {setSelectedObject} from "../components/utils/ShapeModifier";
 import {ShapeDrawer} from "../components/utils/ShapeDrawer";
+import { makeShape } from './Segments';
+
+// Use makeShape and addPolygon functions as needed
 
 let modelObjects =new Array();
 
@@ -20,16 +23,17 @@ let width;
 let rayCaster = null;
 let mouseMovePosition =null;
 let mouseClickPosition =null;
-let startPoint = null;
-let endPoint = null;
 
 let isDrawing = null;
-let segmentCompleted = false;
-let lineGeometry,linePositions;
+let pointsArray = new Array();
+let lineArray = new Array();
 
-let linePoints={};
-let linesArray= new Array();
-let Segments = {};
+let drawing_line_Material = new THREE.LineBasicMaterial({
+    color: 'red',
+    linewidth: 2,
+    transparent: true,
+    depthTest: false,
+});
 
 export default function MapTile() {
     const refContainer = useRef(null);
@@ -65,73 +69,74 @@ export default function MapTile() {
     const handleMouseDown = (event) => {
         var isLeftClick = (event.which === 1 || event.button === 0);
         if (isLeftClick) {
+            isDrawing= true;
             const intersects =getMousePosition(event);
             if (intersects.length > 0) {
-                startPoint = intersects[0].point;
-                // endPoint = intersects[0].point;
+                let point= intersects[0].point;
+                if (pointsArray.length > 0) {
+                    if (point.distanceTo(pointsArray[0]) < 0.15) {
+                        completeSegment();
+                    }
+                    else{
+                        pointsArray.push(point);
+                        drawLine();
+                        console.log(pointsArray);
+                    }
+                }else{
+                    pointsArray.push(point);
+                    drawLine();
+                    console.log(pointsArray);
+                }
 
-                if (isDrawing ){
-                 isDrawing= false;
-                 endPoint = intersects[0].point;
-                 setLineEnd("set");
-                }
-                else{
-                    isDrawing=true;
-                    console.log("startPoint:");
-                    console.log(startPoint);
-                    drawEdge(startPoint);
-                    setLineStart();
-                }
             }
         }
-        else{
-            Segments["SegmentA"]= linesArray;
-            console.log(Segments);
+    }
+
+    function drawLine(){
+        let geometry = new THREE.BufferGeometry().setFromPoints(
+            [
+                pointsArray.slice(-1)[0],
+                pointsArray.slice(-1)[0],
+            ]
+        );
+        let line = new THREE.LineSegments(
+            geometry,
+            drawing_line_Material
+        );
+        line.frustumCulled = false;
+        lineArray.push(line);
+        scene.add(lineArray.slice(-1)[0]);
+    }
+
+    function completeSegment(){
+        if(isDrawing){
+        makeShape(pointsArray,scene);
+        isDrawing= false;
         }
     }
     const handleMouseMove =(event) => {
-        if(isDrawing){
+        if(isDrawing && pointsArray.length > 0){
             const intersects =getMousePosition(event);
             if (intersects.length > 0) {
-                endPoint = intersects[0].point;
-                setLineEnd("update");
+                lineArray.slice(
+                    -1
+                )[0].geometry.attributes.position.array[3] =
+                    intersects[0].point.x;
+                lineArray.slice(
+                    -1
+                )[0].geometry.attributes.position.array[4] =
+                    intersects[0].point.y;
+                lineArray.slice(
+                    -1
+                )[0].geometry.attributes.position.array[5] =
+                    intersects[0].point.z;
+                lineArray.slice(
+                    -1
+                )[0].geometry.attributes.position.needsUpdate = true;
             }
         }
     }
-    function setLineStart(){
-        const lineMaterial = new THREE.LineBasicMaterial({ color: 'red' });
-        lineGeometry = new THREE.BufferGeometry();
-        linePositions = [];
-        const positions = new Float32Array(6);
-        lineGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-        const line = new THREE.Line(lineGeometry, lineMaterial);
-        linePositions[0] = startPoint.x;
-        linePositions[1] = startPoint.y;
-        linePositions[2] = startPoint.z;
-        lineGeometry.attributes.position.array.set(linePositions);
-        lineGeometry.attributes.position.needsUpdate = true;
-        scene.add(line);
-        linePoints = { start: startPoint, end: null };
-    }
-    function setLineEnd(str){
-        linePositions[3] = endPoint.x;
-        linePositions[4] = endPoint.y;
-        linePositions[5] = endPoint.z;
-        lineGeometry.attributes.position.array.set(linePositions);
-        lineGeometry.attributes.position.needsUpdate = true;
-        linePoints.end = endPoint;
-        if(str === "set"){
-            linesArray.push({ ...linePoints });
-            console.log(linesArray)
-            if(linesArray.length> 1){
-                // console.log(endPoint);
-                // console.log(linesArray[0].start)
-                console.log(endPoint.distanceTo(linesArray[0].start)<=1);
-                console.log("near");
-            }
-        }
 
-    }
 
     document.addEventListener('keyup', function(event) {
         if (event.key === 'Enter') {
@@ -165,7 +170,6 @@ export default function MapTile() {
         scene.add(wireframe);
 
     }
-
     function getMousePosition(event) {
         const mouse = new THREE.Vector2();
         mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
@@ -188,7 +192,6 @@ export default function MapTile() {
         cube.position.set(1,1,-8)
         scene.add(cube);
     }
-
     function loadModel(){
         let i=0;
         const loader = new GLTFLoader();
@@ -222,10 +225,8 @@ export default function MapTile() {
             })
 
             scene.add(root);
-            console.log(modelObjects);
         });
     }
-
     function setControl() {
         camera.position.set(-50, 0, 10);
         controls.listenToKeyEvents(window);
@@ -251,12 +252,6 @@ export default function MapTile() {
         controls.update();
 
     }
-
-   function drawSegment(){
-
-   }
-
-
 
     return <div ref={refContainer}></div>;
 }
