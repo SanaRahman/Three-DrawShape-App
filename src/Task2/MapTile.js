@@ -5,7 +5,8 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { makeProjection, projectLatLngToPoint } from './Projection';
 import {setSelectedObject} from "../components/utils/ShapeModifier";
 import {ShapeDrawer} from "../components/utils/ShapeDrawer";
-import { makeShape } from './Segments';
+import { makeShape, getPolygons } from './Segments';
+import { DragControls } from 'three/addons/controls/DragControls.js';
 
 // Use makeShape and addPolygon functions as needed
 
@@ -24,9 +25,15 @@ let rayCaster = null;
 let mouseMovePosition =null;
 let mouseClickPosition =null;
 
-let isDrawing = null;
+let isDrawing = false;
 let pointsArray = new Array();
 let lineArray = new Array();
+let vertices = new Array();
+let allvertices =new Array();
+let Polygons;
+let dragControls;
+let vertexIndex= null;
+let draggable = null;
 
 let drawing_line_Material = new THREE.LineBasicMaterial({
     color: 'red',
@@ -34,13 +41,15 @@ let drawing_line_Material = new THREE.LineBasicMaterial({
     transparent: true,
     depthTest: false,
 });
-
-export default function MapTile() {
+// let Polygons;
+    export default function MapTile() {
     const refContainer = useRef(null);
     const { scene, camera, renderer, controls } = useMemo(() => setUpScene(refContainer.current), []);
     mouseClickPosition = new THREE.Vector2();
     mouseMovePosition =new THREE.Vector2();
     rayCaster = new THREE.Raycaster();
+
+
 
     useEffect(() => {
             setUpScene();
@@ -62,34 +71,36 @@ export default function MapTile() {
         document.addEventListener('mousemove', handleMouseMove, false);
         document.addEventListener('mouseup', handleMouseUp, false);
 
-
         // document.addEventListener('wheel', onMouseWheel, { passive: false });
     }, []);
 
     const handleMouseDown = (event) => {
         var isLeftClick = (event.which === 1 || event.button === 0);
-        if (isLeftClick) {
+        if (isLeftClick && isDrawing!= null) {
             isDrawing= true;
             const intersects =getMousePosition(event);
             if (intersects.length > 0) {
                 let point= intersects[0].point;
                 if (pointsArray.length > 0) {
-                    if (point.distanceTo(pointsArray[0]) < 0.15) {
+                    if (point.distanceTo(pointsArray[0]) < 0.5) {
                         completeSegment();
                     }
                     else{
                         pointsArray.push(point);
+                        drawVertex(point);
                         drawLine();
                         console.log(pointsArray);
                     }
                 }else{
                     pointsArray.push(point);
+                    drawVertex(point);
                     drawLine();
                     console.log(pointsArray);
                 }
 
             }
         }
+
     }
 
     function drawLine(){
@@ -107,12 +118,123 @@ export default function MapTile() {
         lineArray.push(line);
         scene.add(lineArray.slice(-1)[0]);
     }
-
     function completeSegment(){
         if(isDrawing){
-        makeShape(pointsArray,scene);
-        isDrawing= false;
+            makeShape(pointsArray,vertices,scene);
+            pointsArray = [];
+            for (let line in lineArray) {
+
+                lineArray
+                    .slice(-1)[0]
+                    .material.color.setHex(0xff0000);
+                scene.remove(lineArray[line]);
+                lineArray[line].geometry.dispose();
+            }
+            lineArray = [];
+            vertices = [];
+            isDrawing= null;
         }
+        Polygons= getPolygons();
+        console.log(Polygons.object);
+        // isDrawing= null;
+        setDragControls();
+        // console.log(Polygons[0].shape.object.children[0]);
+    }
+    
+    const setDragControls = () => {
+        Polygons= getPolygons();
+        dragControls =new DragControls(allvertices, camera, renderer.domElement);
+            dragControls.addEventListener("hoveron", dragHoverOn);
+            dragControls.addEventListener("hoveroff", dragHoverOff);
+            dragControls.addEventListener("dragstart", dragStart);
+            dragControls.addEventListener("dragend", dragEnd);
+            dragControls.addEventListener("drag", onDrag);
+    }
+
+   const dragHoverOn = (event) => {
+        event.object.material.color.setHex(0x00ff00);
+    };
+
+    const  dragHoverOff = (event) => {
+        event.object.material.color.setHex(0x000000);
+    };
+    const dragStart= (event) => {
+        let vertexId= event.object.uuid;
+        let segment = event.object.parent;
+        for (let i in segment.children) {
+            if (segment.children[i].uuid === vertexId) {
+                vertexIndex= i;
+            }
+        }
+        // controls.enabled = false;
+    }
+    const dragEnd= (event) => {
+
+    }
+    const onDrag= (event) => {
+        let geometry = event.object.geometry;
+        geometry.computeBoundingBox();
+        let center = new THREE.Vector3();
+        geometry.boundingBox.getCenter(center);
+        event.object.localToWorld(center);
+        ////console.log(center);
+        event.object.parent.geometry.attributes.position.setXYZ(
+            vertexIndex,
+            center.x,
+            center.y,
+            center.z
+        );
+        event.object.parent.geometry.attributes.position.needsUpdate = true;
+        let coordinates = [];
+        for (
+            let i = 0;
+            i < event.object.parent.geometry.attributes.position.count;
+            i++
+        ) {
+            coordinates.push({
+                x: event.object.parent.geometry.attributes.position.getX(i),
+                y: event.object.parent.geometry.attributes.position.getY(i),
+                z: event.object.parent.geometry.attributes.position.getZ(i),
+            });
+        }
+
+        let edges = [];
+        for (let i = 0; i < coordinates.length; i++) {
+            edges.push(
+                new THREE.Vector3(
+                    coordinates[i].x,
+                    coordinates[i].y,
+                    coordinates[i].z
+                )
+            );
+            if (i + 1 < coordinates.length) {
+                edges.push(
+                    new THREE.Vector3(
+                        coordinates[i + 1].x,
+                        coordinates[i + 1].y,
+                        coordinates[i + 1].z
+                    )
+                );
+            }
+        }
+        edges.push(
+            new THREE.Vector3(
+                coordinates[0].x,
+                coordinates[0].y,
+                coordinates[0].z
+            )
+        );
+        //console.log(edges)
+        geometry = new THREE.BufferGeometry().setFromPoints(edges);
+        //geometry = new THREE.EdgesGeometry(event.object.parent.geometry, 90)
+
+        event.object.parent.children.slice(-1)[0].geometry.attributes.position =
+            geometry.attributes.position;
+        event.object.parent.children.slice(
+            -1
+        )[0].geometry.attributes.position.needsUpdate = true;
+
+        geometry.dispose();
     }
     const handleMouseMove =(event) => {
         if(isDrawing && pointsArray.length > 0){
@@ -137,7 +259,6 @@ export default function MapTile() {
         }
     }
 
-
     document.addEventListener('keyup', function(event) {
         if (event.key === 'Enter') {
            isDrawing= false;
@@ -145,30 +266,34 @@ export default function MapTile() {
     });
     const handleMouseUp = (event) =>{
     }
-    function drawEdge(position){
+    function drawVertex(position){
         const cubeGeometry = new THREE.BoxGeometry(0.17, 0.17, 0.1);
         const cubeMaterial = new THREE.MeshBasicMaterial({
-            color: 0xC0C0C0, // Gray color
+            color: 0xC0C0C0,
         });
-
         const wireframeMaterial = new THREE.LineBasicMaterial({
-            color: 0x404040, // Dark gray wireframe color
-            linewidth: 4, // Adjust wireframe linewidth
+            color: 0x404040,
+            linewidth: 4,
         });
-
         const cubeMesh = new THREE.Mesh(cubeGeometry, cubeMaterial);
         const wireframeGeometry = new THREE.EdgesGeometry(cubeGeometry);
         const wireframe = new THREE.LineSegments(
             wireframeGeometry,
             wireframeMaterial
         );
-        position.z +=0.2
+        position.z +=0.1
         cubeMesh.position.copy(position);
         wireframe.position.copy(position);
-
+        cubeMesh.depthTest = false;
+        cubeMesh.renderOrder= 3;
+        wireframe.renderOrder =3;
+        cubeMesh.userData.name="vertex";
+        cubeMesh.name="vertex"
+        // cubeMesh.add(wireframe)
         scene.add(cubeMesh);
-        scene.add(wireframe);
-
+        // scene.add(wireframe);
+        vertices.push(cubeMesh)
+        allvertices.push(cubeMesh);
     }
     function getMousePosition(event) {
         const mouse = new THREE.Vector2();
@@ -178,7 +303,6 @@ export default function MapTile() {
         rayCaster = new THREE.Raycaster();
         rayCaster.setFromCamera(mouse, camera);
         return  rayCaster.intersectObjects( modelObjects, false );
-
     }
     function addFloor(){
         const geometry = new THREE.BoxGeometry(150, 150, 0);
@@ -203,14 +327,7 @@ export default function MapTile() {
              height = bbox.max.y - bbox.min.y;
              width = bbox.max.x - bbox.min.x;
             console.log('Height of the bounding box:', height);
-
             root.position.sub(center);
-
-            // const boundingBoxGeometry = new THREE.BoxGeometry(bbox.max.x - bbox.min.x, bbox.max.y - bbox.min.y, bbox.max.z - bbox.min.z);
-            // const boundingBoxMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00, wireframe: true });
-            // const boundingBox = new THREE.Mesh(boundingBoxGeometry, boundingBoxMaterial);
-            // boundingBox.position.set(0,0,0);
-            // scene.add(boundingBox);
 
             gltf.scene.traverse(function (child) {
                 modelObjects.push(child)
@@ -239,10 +356,10 @@ export default function MapTile() {
         // controls.enableDamping =true;
         // controls.dampingFactor = 0.25;
 
-        // controls.rotateSpeed = 0.7;
+        controls.rotateSpeed = 0.7;
         controls.enablePan =true;
         controls.minPolarAngle = 0;
-        let h= controls.minPolarAngle;
+        // let h= controls.minPolarAngle;
         controls.maxPolarAngle = 60 * (Math.PI/180);
         // controls.minDistance = 2;
         // controls.maxDistance = 500;
