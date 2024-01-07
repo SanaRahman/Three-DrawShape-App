@@ -19,10 +19,10 @@ export function setUpScene() {
         renderer.setSize(window.innerWidth, window.innerHeight);
         // scene.background = new THREE.Color(0x808080); // Gray background
 
-        const ambientLight = new THREE.AmbientLight(0xffffff, 3.0);
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
         scene.add(ambientLight);
 
-        const directionalLight = new THREE.DirectionalLight(0xffffff, 4.0);
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 3.2);
         directionalLight.position.set(1, 1, 9);
         scene.add(directionalLight);
 
