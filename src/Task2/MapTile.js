@@ -6,6 +6,7 @@ import { makeProjection, projectLatLngToPoint } from './Projection';
 import {setSelectedObject} from "../components/utils/ShapeModifier";
 import { makeShape, getPolygons } from './Segments';
 import { DragControls } from 'three/addons/controls/DragControls.js';
+import {CSS2DObject, CSS2DRenderer} from "three/addons";
 
 // Use makeShape and addPolygon functions as needed
 
@@ -15,7 +16,7 @@ let coordinatesStr="322650 3706594"
 let projection ="+proj=utm +zone=43 +datum=WGS84 +units=m +no_defs +type=crs"
 let lat ="33.484177969551"
 let lng= "73.0911479190149"
-let modelmaxheight;
+
 let height;
 let width;
 
@@ -31,10 +32,10 @@ let allvertices =new Array();
 let Polygons;
 let dragControls;
 let vertexIndex= null;
-let draggable = null;
 
-let darkFloorDirectionalLight; // Declare the dark floor directional light variable
-let darkFloorDirectionalLightHelper;
+
+let labelRenderer = new CSS2DRenderer();
+
 
 let drawing_line_Material = new THREE.LineBasicMaterial({
     color: 'red',
@@ -58,6 +59,7 @@ let drawing_line_Material = new THREE.LineBasicMaterial({
             renderer.setSize(width, height)
             renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
             renderer.render(scene, camera)
+            labelRenderer.setSize(window.innerWidth,window.innerHeight)
         })
 
     useEffect(() => {
@@ -65,11 +67,19 @@ let drawing_line_Material = new THREE.LineBasicMaterial({
             addFloor();
             loadModel();
             setControl();
+            labelRenderer.setSize(window.innerWidth,window.innerHeight)
+            labelRenderer.domElement.style.position = "fixed";
+            labelRenderer.domElement.style.top = "2px";
+            labelRenderer.domElement.style.left = "0px";
+            labelRenderer.domElement.style.pointerEvents = "none";
+
             refContainer.current && refContainer.current.appendChild(renderer.domElement);
+            refContainer.current.appendChild(labelRenderer.domElement);
 
             const animate = () => {
                 requestAnimationFrame(animate);
                 controls.update();
+                labelRenderer.render(scene, camera);
                 renderer.render(scene, camera);
             };
             animate();
@@ -90,7 +100,7 @@ let drawing_line_Material = new THREE.LineBasicMaterial({
             const intersects =getMousePosition(event);
             if (intersects.length > 0) {
                 let point= intersects[0].point;
-                if (pointsArray.length > 0) {
+                if (pointsArray.length > 2) {
                     if (point.distanceTo(pointsArray[0]) < 0.5) {
                         completeSegment();
                     }
@@ -98,13 +108,11 @@ let drawing_line_Material = new THREE.LineBasicMaterial({
                         pointsArray.push(point);
                         drawVertex(point);
                         drawLine();
-
                     }
                 }else{
                     pointsArray.push(point);
                     drawVertex(point);
                     drawLine();
-
                 }
 
             }
@@ -132,22 +140,18 @@ let drawing_line_Material = new THREE.LineBasicMaterial({
             makeShape(pointsArray,vertices,scene);
             pointsArray = [];
             for (let line in lineArray) {
-
                 lineArray
                     .slice(-1)[0]
                     .material.color.setHex(0xff0000);
                 scene.remove(lineArray[line]);
                 lineArray[line].geometry.dispose();
             }
+
             lineArray = [];
             vertices = [];
             isDrawing= null;
         }
-        Polygons= getPolygons();
-        console.log(Polygons.object);
-        // isDrawing= null;
         setDragControls();
-        // console.log(Polygons[0].shape.object.children[0]);
     }
     
     const setDragControls = () => {
@@ -175,74 +179,74 @@ let drawing_line_Material = new THREE.LineBasicMaterial({
                 vertexIndex= i;
             }
         }
-        // controls.enabled = false;
+        controls.enabled = false;
     }
     const dragEnd= (event) => {
-
+        controls.enabled = true;
     }
     const onDrag= (event) => {
-        let geometry = event.object.geometry;
-        geometry.computeBoundingBox();
-        let center = new THREE.Vector3();
-        geometry.boundingBox.getCenter(center);
-        event.object.localToWorld(center);
-        ////console.log(center);
-        event.object.parent.geometry.attributes.position.setXYZ(
-            vertexIndex,
-            center.x,
-            center.y,
-            center.z
-        );
-        event.object.parent.geometry.attributes.position.needsUpdate = true;
-        let coordinates = [];
-        for (
-            let i = 0;
-            i < event.object.parent.geometry.attributes.position.count;
-            i++
-        ) {
-            coordinates.push({
-                x: event.object.parent.geometry.attributes.position.getX(i),
-                y: event.object.parent.geometry.attributes.position.getY(i),
-                z: event.object.parent.geometry.attributes.position.getZ(i),
-            });
-        }
+            let geometry = event.object.geometry;
+            geometry.computeBoundingBox();
+            let center = new THREE.Vector3();
+            geometry.boundingBox.getCenter(center);
+            event.object.localToWorld(center);
 
-        let edges = [];
-        for (let i = 0; i < coordinates.length; i++) {
-            edges.push(
-                new THREE.Vector3(
-                    coordinates[i].x,
-                    coordinates[i].y,
-                    coordinates[i].z
-                )
+            event.object.parent.geometry.attributes.position.setXYZ(
+                vertexIndex,
+                center.x,
+                center.y,
+                center.z
             );
-            if (i + 1 < coordinates.length) {
+            event.object.parent.geometry.attributes.position.needsUpdate = true;
+            let coordinates = [];
+            for (
+                let i = 0;
+                i < event.object.parent.geometry.attributes.position.count;
+                i++
+            ) {
+                coordinates.push({
+                    x: event.object.parent.geometry.attributes.position.getX(i),
+                    y: event.object.parent.geometry.attributes.position.getY(i),
+                    z: event.object.parent.geometry.attributes.position.getZ(i),
+                });
+            }
+
+            let edges = [];
+            for (let i = 0; i < coordinates.length; i++) {
                 edges.push(
                     new THREE.Vector3(
-                        coordinates[i + 1].x,
-                        coordinates[i + 1].y,
-                        coordinates[i + 1].z
+                        coordinates[i].x,
+                        coordinates[i].y,
+                        coordinates[i].z
                     )
                 );
+                if (i + 1 < coordinates.length) {
+                    edges.push(
+                        new THREE.Vector3(
+                            coordinates[i + 1].x,
+                            coordinates[i + 1].y,
+                            coordinates[i + 1].z
+                        )
+                    );
+                }
             }
-        }
-        edges.push(
-            new THREE.Vector3(
-                coordinates[0].x,
-                coordinates[0].y,
-                coordinates[0].z
-            )
-        );
-        //console.log(edges)
-        geometry = new THREE.BufferGeometry().setFromPoints(edges);
+            edges.push(
+                new THREE.Vector3(
+                    coordinates[0].x,
+                    coordinates[0].y,
+                    coordinates[0].z
+                )
+            );
+            geometry = new THREE.BufferGeometry().setFromPoints(edges);
 
-        event.object.parent.children.slice(-1)[0].geometry.attributes.position =
-            geometry.attributes.position;
-        event.object.parent.children.slice(
-            -1
-        )[0].geometry.attributes.position.needsUpdate = true;
+            event.object.parent.children.slice(-1)[0].geometry.attributes.position =
+                geometry.attributes.position;
+            event.object.parent.children.slice(
+                -1
+            )[0].geometry.attributes.position.needsUpdate = true;
 
-        geometry.dispose();
+            geometry.dispose();
+
     }
     const handleMouseMove =(event) => {
         if(isDrawing && pointsArray.length > 0){
@@ -273,12 +277,15 @@ let drawing_line_Material = new THREE.LineBasicMaterial({
            let lastLine=lineArray.pop();
            scene.remove(lastLine);
            lastLine.geometry.dispose();
+          let lastvertex= vertices.pop();
+           scene.remove(lastvertex);
+           allvertices.pop();
         }
     }
     document.addEventListener('keyup', function(event) {
-        if (event.key === 'Enter') {
-           completeSegment();
-            isDrawing= false;
+        if (event.key === 'Enter' && pointsArray.length > 2) {
+                completeSegment();
+                isDrawing= false;
         }
         else if(event.key === 'Escape'){
             undo();
@@ -287,34 +294,20 @@ let drawing_line_Material = new THREE.LineBasicMaterial({
     const handleMouseUp = (event) =>{
     }
     function drawVertex(position){
-        const cubeGeometry = new THREE.BoxGeometry(0.17, 0.17, 0.1);
-        const cubeMaterial = new THREE.MeshBasicMaterial({
-            color: 0xC0C0C0,
-        });
-        const wireframeMaterial = new THREE.LineBasicMaterial({
-            color: 0x404040,
-            linewidth: 4,
-        });
-        const cubeMesh = new THREE.Mesh(cubeGeometry, cubeMaterial);
-        const wireframeGeometry = new THREE.EdgesGeometry(cubeGeometry);
-        const wireframe = new THREE.LineSegments(
-            wireframeGeometry,
-            wireframeMaterial
-        );
-        position.z +=0.1
-        cubeMesh.position.copy(position);
-        wireframe.position.copy(position);
-        cubeMesh.depthTest = false;
-        cubeMesh.renderOrder= 3;
-        wireframe.renderOrder =3;
-        cubeMesh.userData.name="vertex";
-        cubeMesh.name="vertex"
-        // cubeMesh.add(wireframe)
-        scene.add(cubeMesh);
-        // scene.add(wireframe);
-        vertices.push(cubeMesh)
-        allvertices.push(cubeMesh);
+        let geometry = new THREE.CircleGeometry( 0.2, 32 );
+        let material = new THREE.MeshBasicMaterial( { color: 'black' } );
+
+        material.depthTest = false;
+
+        let circle = new THREE.Mesh( geometry, material );
+        circle.position.copy(position);
+        circle.name = "marker";
+        circle.renderOrder = 1;
+        scene.add(circle);
+        vertices.push(circle)
+        allvertices.push(circle);
     }
+
     function getMousePosition(event) {
         const mouse = new THREE.Vector2();
         mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
@@ -348,11 +341,8 @@ let drawing_line_Material = new THREE.LineBasicMaterial({
         loader.load('models/model2/model.glb', function (gltf) {
             const root = gltf.scene;
             let bbox = new THREE.Box3().setFromObject(root);
-            modelmaxheight = bbox.max.z;
+            // modelmaxheight = bbox.max.z;
             let center = bbox.getCenter(new THREE.Vector3());
-             height = bbox.max.y - bbox.min.y;
-             width = bbox.max.x - bbox.min.x;
-            console.log('Height of the bounding box:', height);
             root.position.sub(center);
 
             gltf.scene.traverse(function (child) {
@@ -385,7 +375,6 @@ let drawing_line_Material = new THREE.LineBasicMaterial({
         controls.maxPolarAngle = 60 * (Math.PI/180);
         controls.target.set(0, 0, 0)
         controls.update();
-
     }
 
     return <div ref={refContainer}></div>;
