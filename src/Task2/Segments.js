@@ -22,12 +22,12 @@ let measurementLabels ={};
                 edges.push(new THREE.Vector3(coordinates[i+1].x,coordinates[i+1].y,coordinates[i+1].z))
                 const point1 = coordinates[i];
                 const point2 = coordinates[i + 1];
-               addLabel(point1, point2, scene)
+               addLabel(point1, point2,i,scene)
             }
             else{
                 const point1 = coordinates[i];
                 const point2 = coordinates[0];
-                addLabel(point1,point2,scene)
+                addLabel(point1,point2,i+1,scene)
             }
         }
 
@@ -49,13 +49,14 @@ let measurementLabels ={};
         polygons.push(shape);
     }
 
-    function addLabel(point1, point2, scene){
+    function addLabel(point1, point2,i, scene){
 
         const distanceInMeters = point1.distanceTo(point2);
         const totalDistanceInFeet = distanceInMeters * 3.281;
         const totalFeet = Math.floor(totalDistanceInFeet);
         const totalInches = Math.round((totalDistanceInFeet - totalFeet) * 12);
 
+        let measureid = (polygons.length+1).toString()+"_"+i.toString();
         const measurementDiv = document.createElement('div');
         measurementDiv.className = 'measurementLabel';
         measurementDiv.innerText = `${totalFeet}'${totalInches}" ft`;
