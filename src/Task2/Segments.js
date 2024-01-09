@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import {CSS2DObject} from "three/addons";
 
 let polygons = new Array();
+let lines = new Array();
 let measurementLabels ={};
 // import {CSS2DObject} from 'three/examples/jsm/renderers/CSS2DRenderer'
 
@@ -22,12 +23,16 @@ let measurementLabels ={};
                 edges.push(new THREE.Vector3(coordinates[i+1].x,coordinates[i+1].y,coordinates[i+1].z))
                 const point1 = coordinates[i];
                 const point2 = coordinates[i + 1];
-               addLabel(point1, point2,i,scene)
+                const vertexId1 = vertices[i].uuid;
+                const vertexId2 = vertices[i+1].uuid;
+               addLabel(point1, point2,i,vertexId1,vertexId2,scene)
             }
             else{
                 const point1 = coordinates[i];
                 const point2 = coordinates[0];
-                addLabel(point1,point2,i+1,scene)
+                const vertexId1 = vertices[i].uuid;
+                const vertexId2 = vertices[0].uuid;
+                addLabel(point1,point2,i,vertexId1,vertexId2,scene)
             }
         }
 
@@ -45,11 +50,11 @@ let measurementLabels ={};
         polygon.add(wireframe);
         scene.add(polygon)
         // scene.add(wireframe);
-        let shape={"shape": polygon};
-        polygons.push(shape);
+        let shapes={"shape": polygon,"lines":lines};
+        polygons.push(shapes);
     }
 
-    function addLabel(point1, point2,i, scene){
+    function addLabel(point1, point2,i,vertexId1,vertexId2, scene){
 
         const distanceInMeters = point1.distanceTo(point2);
         const totalDistanceInFeet = distanceInMeters * 3.281;
@@ -59,23 +64,28 @@ let measurementLabels ={};
         let measureid = (polygons.length+1).toString()+"_"+i.toString();
         const measurementDiv = document.createElement('div');
         measurementDiv.className = 'measurementLabel';
-        measurementDiv.innerText = `${totalFeet}'${totalInches}" ft`;
         measurementDiv.style.fontSize = '10px';
         measurementDiv.style.backgroundColor = '#005cba'; // Set the background color
         measurementDiv.style.borderRadius = '5px';
         measurementDiv.style.color = 'white'; // Add rounded corners
         measurementDiv.style.padding = '5px'; //
-
         measurementDiv.style.fontWeight = 'bold';
         const measurementLabel = new CSS2DObject(measurementDiv);
-        measurementLabel.position.lerpVectors(
+        measurementLabels[measureid]= measurementLabel;
+        measurementLabels[measureid].element.innerText = `${totalFeet}'${totalInches}" ft`;
+
+        measurementLabels[measureid].position.lerpVectors(
             point1,
             point2,
             0.5
         );
-        scene.add(measurementLabel);
+        scene.add(measurementLabels[measureid]);
+        lines.push({"point1":point1, "point2": point2,"id":measureid,"measurement":totalDistanceInFeet, "vertexId1":vertexId1,"vertexId2":vertexId2});
     }
 
     export function  getPolygons(){
         return polygons;
+    }
+    export function getMeasurmentLables(){
+       return measurementLabels;
     }

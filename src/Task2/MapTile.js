@@ -4,7 +4,7 @@ import React, { useRef, useEffect, useMemo } from 'react';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { makeProjection, projectLatLngToPoint } from './Projection';
 import {setSelectedObject} from "../components/utils/ShapeModifier";
-import { makeShape, getPolygons } from './Segments';
+import { makeShape, getPolygons ,getMeasurmentLables} from './Segments';
 import { DragControls } from 'three/addons/controls/DragControls.js';
 import {CSS2DObject, CSS2DRenderer} from "three/addons";
 
@@ -33,17 +33,14 @@ let Polygons;
 let dragControls;
 let vertexIndex= null;
 
-
 let labelRenderer = new CSS2DRenderer();
-
-
 let drawing_line_Material = new THREE.LineBasicMaterial({
     color: 'red',
     linewidth: 2,
     transparent: true,
     depthTest: false,
 });
-// let Polygons;
+
     export default function MapTile() {
     const refContainer = useRef(null);
     const { scene, camera, renderer, controls } = useMemo(() => setUpScene(refContainer.current), []);
@@ -114,10 +111,8 @@ let drawing_line_Material = new THREE.LineBasicMaterial({
                     drawVertex(point);
                     drawLine();
                 }
-
             }
         }
-
     }
 
     function drawLine(){
@@ -247,6 +242,54 @@ let drawing_line_Material = new THREE.LineBasicMaterial({
 
             geometry.dispose();
 
+            updateLabelPositions(event, center);
+
+    }
+
+    function updateLabelPositions(event, center){
+        let parentId = event.object.parent.uuid;
+
+        for( let polygon in Polygons){
+            if(Polygons[polygon]["shape"].uuid === parentId){
+                for(let line of Polygons[polygon]["lines"]){
+                    console.log(line)
+                    let marker1UUID = line["vertexId1"] ;
+                    let marker2UUID = line["vertexId2"];
+                    console.log(marker1UUID);
+
+                    if (marker1UUID === event.object.uuid || marker2UUID === event.object.uuid) {
+                        let id = line["id"];
+                        console.log(id)
+                        if (marker1UUID === event.object.uuid) {
+                            line["point1"] = center;
+                        } else {
+                            line["point2"] = center;
+                        }
+
+
+                        let distance = center.distanceTo(marker1UUID === event.object.uuid ? line["point2"] : line["point1"]) * 3.281;
+                        let feet = Math.floor(distance);
+                        let inches = Math.round((distance - feet) * 12);
+                        let text = feet + "'" + inches + '"ft';
+                       // console.log(Polygons.measurementLabels[id])
+                        let label= getMeasurmentLables();
+                        label[id].element.innerText = text;
+                        label[id].position.lerpVectors(
+                            marker1UUID === event.object.uuid ? center : line["point1"],
+                            marker1UUID === event.object.uuid ? line["point2"] : center,
+                            0.5
+                        );
+
+                        line["measurement"] = distance;
+                    }
+                }
+            }
+            Polygons[polygon]["shape"].geometry.computeBoundingBox();
+            center = new THREE.Vector3();
+            Polygons[polygon]["shape"].geometry.boundingBox.getCenter(center);
+
+        }
+
     }
     const handleMouseMove =(event) => {
         if(isDrawing && pointsArray.length > 0){
@@ -270,24 +313,33 @@ let drawing_line_Material = new THREE.LineBasicMaterial({
             }
         }
     }
-
     function undo(){
         if(isDrawing){
-            pointsArray.pop();
-           let lastLine=lineArray.pop();
-           scene.remove(lastLine);
-           lastLine.geometry.dispose();
-          let lastvertex= vertices.pop();
-           scene.remove(lastvertex);
-           allvertices.pop();
+            if (pointsArray.length > 0) {
+                pointsArray.pop();
+            }
+
+            if (lineArray.length > 0) {
+                let lastLine = lineArray.pop();
+                scene.remove(lastLine);
+                lastLine.geometry.dispose();
+            }
+
+            if (vertices.length > 0) {
+                let lastVertex = vertices.pop();
+                scene.remove(lastVertex);
+                allvertices.pop();
+            }
         }
     }
+
     document.addEventListener('keyup', function(event) {
         if (event.key === 'Enter' && pointsArray.length > 2) {
                 completeSegment();
                 isDrawing= false;
         }
         else if(event.key === 'Escape'){
+
             undo();
         }
     });
@@ -301,13 +353,12 @@ let drawing_line_Material = new THREE.LineBasicMaterial({
 
         let circle = new THREE.Mesh( geometry, material );
         circle.position.copy(position);
-        circle.name = "marker";
+        circle.name = "vertex";
         circle.renderOrder = 1;
         scene.add(circle);
         vertices.push(circle)
         allvertices.push(circle);
     }
-
     function getMousePosition(event) {
         const mouse = new THREE.Vector2();
         mouse.x = (event.clientX / window.innerWidth) * 2 - 1;

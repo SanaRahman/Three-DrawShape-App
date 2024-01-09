@@ -31,8 +31,8 @@ export function setUpScene() {
 
 
         // Optional Helpers to understand 3D space
-        const  AxesHelper = new THREE.AxesHelper(50);
-        scene.add(AxesHelper);
+        // const  AxesHelper = new THREE.AxesHelper(50);
+        // scene.add(AxesHelper);
 
          // const gridHelper= new THREE.GridHelper(100,10);
          // scene.add(gridHelper);
