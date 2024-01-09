@@ -2,13 +2,11 @@ import * as THREE from 'three';
 import { setUpScene } from '../components/ThreeScene';
 import React, { useRef, useEffect, useMemo } from 'react';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { makeProjection, projectLatLngToPoint } from './Projection';
-import {setSelectedObject} from "../components/utils/ShapeModifier";
+// import { makeProjection, projectLatLngToPoint } from './Projection';
+// import {setSelectedObject} from "../components/utils/ShapeModifier";
 import { makeShape, getPolygons ,getMeasurmentLables} from './Segments';
 import { DragControls } from 'three/addons/controls/DragControls.js';
-import {CSS2DObject, CSS2DRenderer} from "three/addons";
-
-// Use makeShape and addPolygon functions as needed
+import { CSS2DRenderer} from "three/addons";
 
 let modelObjects =new Array();
 
@@ -28,10 +26,11 @@ let isDrawing = false;
 let pointsArray = new Array();
 let lineArray = new Array();
 let vertices = new Array();
-let allvertices =new Array();
+let allVertices =new Array();
 let Polygons;
 let dragControls;
 let vertexIndex= null;
+let isCtrlPressed = false;
 
 let labelRenderer = new CSS2DRenderer();
 let drawing_line_Material = new THREE.LineBasicMaterial({
@@ -48,7 +47,7 @@ let drawing_line_Material = new THREE.LineBasicMaterial({
     mouseMovePosition =new THREE.Vector2();
     rayCaster = new THREE.Raycaster();
 
-        window.addEventListener('resize', () => {
+    window.addEventListener('resize', () => {
             width = window.innerWidth
             height = window.innerHeight
             camera.aspect = width / height
@@ -86,6 +85,8 @@ let drawing_line_Material = new THREE.LineBasicMaterial({
         document.addEventListener('mousedown', handleMouseDown, false);
         document.addEventListener('mousemove', handleMouseMove, false);
         document.addEventListener('mouseup', handleMouseUp, false);
+        window.addEventListener('keydown', onKeyDown, false);
+        window.addEventListener('keyup', onKeyUp, false);
 
         // document.addEventListener('wheel', onMouseWheel, { passive: false });
     }, []);
@@ -151,7 +152,7 @@ let drawing_line_Material = new THREE.LineBasicMaterial({
     
     const setDragControls = () => {
         Polygons= getPolygons();
-        dragControls =new DragControls(allvertices, camera, renderer.domElement);
+        dragControls =new DragControls(allVertices, camera, renderer.domElement);
             dragControls.addEventListener("hoveron", dragHoverOn);
             dragControls.addEventListener("hoveroff", dragHoverOff);
             dragControls.addEventListener("dragstart", dragStart);
@@ -270,10 +271,8 @@ let drawing_line_Material = new THREE.LineBasicMaterial({
                         let distance = center.distanceTo(marker1UUID === event.object.uuid ? line["point2"] : line["point1"]) * 3.281;
                         let feet = Math.floor(distance);
                         let inches = Math.round((distance - feet) * 12);
-                        let text = feet + "'" + inches + '"ft';
-                       // console.log(Polygons.measurementLabels[id])
                         let label= getMeasurmentLables();
-                        label[id].element.innerText = text;
+                        label[id].element.innerText = `${feet}'${inches}" ft`;
                         label[id].position.lerpVectors(
                             marker1UUID === event.object.uuid ? center : line["point1"],
                             marker1UUID === event.object.uuid ? line["point2"] : center,
@@ -287,30 +286,36 @@ let drawing_line_Material = new THREE.LineBasicMaterial({
             Polygons[polygon]["shape"].geometry.computeBoundingBox();
             center = new THREE.Vector3();
             Polygons[polygon]["shape"].geometry.boundingBox.getCenter(center);
-
         }
 
     }
     const handleMouseMove =(event) => {
         if(isDrawing && pointsArray.length > 0){
             const intersects =getMousePosition(event);
-            if (intersects.length > 0) {
-                lineArray.slice(
-                    -1
-                )[0].geometry.attributes.position.array[3] =
-                    intersects[0].point.x;
-                lineArray.slice(
-                    -1
-                )[0].geometry.attributes.position.array[4] =
-                    intersects[0].point.y;
-                lineArray.slice(
-                    -1
-                )[0].geometry.attributes.position.array[5] =
-                    intersects[0].point.z;
-                lineArray.slice(
-                    -1
-                )[0].geometry.attributes.position.needsUpdate = true;
-            }
+            updateLine(intersects);
+        }
+
+        if (isCtrlPressed ) {
+          controls.enabledPan =true;
+        }
+    }
+    function updateLine(intersects){
+        if (intersects.length > 0) {
+            lineArray.slice(
+                -1
+            )[0].geometry.attributes.position.array[3] =
+                intersects[0].point.x;
+            lineArray.slice(
+                -1
+            )[0].geometry.attributes.position.array[4] =
+                intersects[0].point.y;
+            lineArray.slice(
+                -1
+            )[0].geometry.attributes.position.array[5] =
+                intersects[0].point.z;
+            lineArray.slice(
+                -1
+            )[0].geometry.attributes.position.needsUpdate = true;
         }
     }
     function undo(){
@@ -327,22 +332,36 @@ let drawing_line_Material = new THREE.LineBasicMaterial({
 
             if (vertices.length > 0) {
                 let lastVertex = vertices.pop();
+                // const event = {
+                //     clientX: mouseMovePosition.x,
+                //     clientY: mouseMovePosition.y,
+                //     clientZ: -1
+                // };
+                // console.log(event)
+                // handleMouseMove(event);
                 scene.remove(lastVertex);
-                allvertices.pop();
+                allVertices.pop();
             }
         }
     }
-
-    document.addEventListener('keyup', function(event) {
-        if (event.key === 'Enter' && pointsArray.length > 2) {
-                completeSegment();
-                isDrawing= false;
+    function onKeyDown(event) {
+        if (event.key === 'Control') {
+            isCtrlPressed = true;
+        }
+        else if (event.key === 'Enter' && pointsArray.length > 2) {
+            completeSegment();
+            isDrawing= false;
         }
         else if(event.key === 'Escape'){
-
             undo();
         }
-    });
+    }
+    function onKeyUp(event) {
+        if (!event.ctrlKey) {
+            isCtrlPressed = false;
+            controls.enabledPan = false;
+        }
+    }
     const handleMouseUp = (event) =>{
     }
     function drawVertex(position){
@@ -357,15 +376,16 @@ let drawing_line_Material = new THREE.LineBasicMaterial({
         circle.renderOrder = 1;
         scene.add(circle);
         vertices.push(circle)
-        allvertices.push(circle);
+        allVertices.push(circle);
     }
     function getMousePosition(event) {
-        const mouse = new THREE.Vector2();
-        mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-        mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+        mouseMovePosition.x = (event.clientX / window.innerWidth) * 2 - 1;
+        mouseMovePosition.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
 
         rayCaster = new THREE.Raycaster();
-        rayCaster.setFromCamera(mouse, camera);
+        rayCaster.setFromCamera(mouseMovePosition, camera);
         return  rayCaster.intersectObjects( modelObjects, false );
     }
     function addFloor(){
@@ -381,11 +401,11 @@ let drawing_line_Material = new THREE.LineBasicMaterial({
         scene.add(cube);
         const renderTarget = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight);
         renderTarget.texture.encoding = THREE.sRGBEncoding;
-        //
-        const directionalLight = new THREE.DirectionalLight(0xffffff, 1.1);
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.75);
         directionalLight.position.set(0, 0, -2); // Direction of the light
         scene.add(directionalLight);
     }
+
     function loadModel(){
         let i=0;
         const loader = new GLTFLoader();
@@ -420,10 +440,13 @@ let drawing_line_Material = new THREE.LineBasicMaterial({
             RIGHT: THREE.MOUSE.ROTATE,
         };
 
+        controls.zoomToCursor = true
         controls.rotateSpeed = 1;
         controls.enablePan =true;
         controls.minPolarAngle = 0;
         controls.maxPolarAngle = 60 * (Math.PI/180);
+        controls.minDistance = 2;
+        controls.maxDistance =150;
         controls.target.set(0, 0, 0)
         controls.update();
     }

@@ -1,10 +1,9 @@
 import * as THREE from 'three';
 import {CSS2DObject} from "three/addons";
-
 let polygons = new Array();
 let lines = new Array();
 let measurementLabels ={};
-// import {CSS2DObject} from 'three/examples/jsm/renderers/CSS2DRenderer'
+
 
    export function makeShape(coordinates,vertices,scene){
         let polyShape = new THREE.Shape(coordinates.map((coord) => new THREE.Vector2(coord.x, coord.y)))
